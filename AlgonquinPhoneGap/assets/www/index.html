@@ -1,0 +1,121 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta name="viewport" content="width=320; user-scalable=no" />
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+    <title>Algonquin Demo</title>
+
+      <link rel="stylesheet" href="css/master.css" />
+      <link rel="stylesheet" href="jquery.mobile/jquery.mobile-1.0.css" />
+      <script type="text/javascript" src="jquery.mobile/jquery-1.7.1.js"></script>
+      <script type="text/javascript" src="jquery.mobile/jquery.mobile-1.0.js"></script>
+	  <script type="text/javascript" charset="utf-8" src="phonegap-1.3.0.js"></script>
+	  <script type="text/javascript" charset="utf-8">
+      
+        var onDeviceReady = function() {
+            console.log("I'm ready!");
+        };
+
+        function init() {
+            document.addEventListener("deviceready", onDeviceReady, true);
+        }
+        
+    function loadTweets() {
+        var request = new XMLHttpRequest();
+        request.open("GET", "http://search.twitter.com/search.json?q=phonegap", true);
+        request.onreadystatechange = function() {//Call a function when the state changes.
+            console.log("state = " + request.readyState);
+            if (request.readyState == 4) {
+                if (request.status == 200 || request.status == 0) {
+                    console.log("*" + request.responseText + "*");
+                    buildTable(request.responseText);
+                    storeTweets(escape(request.responseText));
+                }
+            }
+        }
+        console.log("asking for tweets");
+        request.send();
+    }
+    
+    function buildTable(responseText) {
+        var tweets = JSON.parse(responseText);
+        var data = "<table cellspacing='0'>";
+        var tableClass;
+        for (i = 0; i < tweets.results.length; i++) {
+            if (i % 2 == 0) {
+                tableClass = 'tweetOdd';
+            }
+            else {
+                tableClass = 'tweetEven';
+            }
+            data += "<tr style='border: 1px solid black'>";
+            data += "<td class='" + tableClass + "'>";
+            data += "<img src='" + tweets.results[i].profile_image_url + "'/>";
+            data += "</td>";
+            data += "<td class='" + tableClass + "'>";
+            data += "<b>" + tweets.results[i].from_user + "</b><br/>";
+            data += tweets.results[i].text + "<br/>";
+            data += tweets.results[i].created_at;
+            data += "</td>";
+            data += "</tr>";
+        }
+        data += "</table>";
+        var twitter = document.getElementById("tweets");
+        twitter.innerHTML = data;
+    }
+    
+    function storeTweets(data) {
+        var db = window.openDatabase("Database", "1.0", "Algonquin Demo", 200000);
+        db.transaction(function(tx) {
+             tx.executeSql('DROP TABLE IF EXISTS tweets');
+             tx.executeSql('CREATE TABLE IF NOT EXISTS tweets (id unique, data)');
+             tx.executeSql('INSERT INTO tweets (id, data) VALUES (1, "' + data + '")', [],
+                 function(tx,results) { console.log("Insert row1 success"); },
+                 function(tx,err) { alert("Error adding 1st row: "+err.message); });
+        }, function() { console.log("error"); }, function() { console.log("win"); });
+    }
+    
+    function loadStoredTweets() {
+        var db = window.openDatabase("Database", "1.0", "Algonquin Demo", 200000);
+        db.transaction(function(tx) {
+             tx.executeSql('SELECT * FROM TWEETS', [], querySuccess, function() { console.log("error"); });
+        }, function() { console.log("error"); }, function() { console.log("win"); });        
+    }
+    
+    function querySuccess(tx, results) {
+        var len = results.rows.length;
+        console.log("TWEETS table: " + len + " rows found.");
+        if (len > 0) {
+            buildTable(unescape(results.rows.item(0).data));
+        }
+    }
+    
+    function clearTweets() {
+        var twitter = document.getElementById("tweets");
+        twitter.innerHTML = "";
+    }
+</script>  
+
+  </head>
+  <body onload="init();" id="stage" class="theme">
+      
+<div data-role="page" id="main">
+    <div data-role="header">
+        <h1>Algonquin Demo</h1>
+    </div><!-- /header -->
+
+    <div>
+        <div data-role="content" id="status">
+            <a href="#" id="unpluggBtn" onclick="loadTweets()" data-role="button">Get Tweets!</a>
+            <a href="#" id="unpluggBtn2" onclick="loadStoredTweets()" data-role="button">Load Tweets from DB</a>            
+            <a href="#" id="unpluggBtn2" onclick="clearTweets()" data-role="button">Clear Tweets</a>            
+        </div><!-- /content -->
+    
+        <div id="tweets"></div>
+    
+    </div>
+
+</div>
+
+  </body>
+</html>

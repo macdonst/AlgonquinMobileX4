@@ -1,0 +1,11 @@
+// Twitter classes
+
+.tweetEven, .tweetOdd {
+	border-top:1px solid #000000;
+	padding: 2px 2px 2px 2px;
+}
+ 
+.tweetEven {
+    //background-color: rgba(243, 151, 62, 0.25);
+	background:#dcdcdc;
+}
